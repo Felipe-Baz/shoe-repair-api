@@ -1,3 +1,23 @@
+  ShoeRepairUsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ShoeRepairUsers
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: email-index
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Shoe Repair API - Lambda + API Gateway + DynamoDB
 Parameters:
@@ -25,6 +45,38 @@ Resources:
           DYNAMODB_CLIENTE_TABLE: !Ref ShoeRepairClientesTable
           DYNAMODB_PEDIDO_TABLE: !Ref ShoeRepairPedidosTable
           S3_BUCKET_NAME: !Ref ShoeRepairFotosBucket
+          DYNAMODB_USER_TABLE: !Ref ShoeRepairUsersTable
+          JWT_SECRET: !Ref JWTSecret
+          REFRESH_SECRET: !Ref RefreshSecret
+          JWT_EXPIRES: !Ref JWTExpires
+          REFRESH_EXPIRES: !Ref RefreshExpires
+  JWTSecret:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /shoe-repair-api/jwt-secret
+      Type: String
+  Value: 2b1e7c7e-8e2a-4c3a-9f7d-7e8b2e1c9f3a
+
+  RefreshSecret:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /shoe-repair-api/refresh-secret
+      Type: String
+  Value: 7e4d2c1b-3a9f-4e8b-8c2a-1f7d2e3b4c5a
+
+  JWTExpires:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /shoe-repair-api/jwt-expires
+      Type: String
+      Value: 15m
+
+  RefreshExpires:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /shoe-repair-api/refresh-expires
+      Type: String
+      Value: 7d
   ShoeRepairFotosBucket:
     Type: AWS::S3::Bucket
     Properties:

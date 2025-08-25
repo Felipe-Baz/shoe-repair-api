@@ -2,9 +2,11 @@ require('dotenv').config();
 const express = require('express');
 const serverless = require('serverless-http');
 
+
 const clienteRoutes = require('./src/routes/clienteRoutes');
 const pedidoRoutes = require('./src/routes/pedidoRoutes');
 const uploadRoutes = require('./src/routes/uploadRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
 app.use(express.json());
@@ -12,6 +14,7 @@ app.use(express.json());
 app.use('/clientes', clienteRoutes);
 app.use('/pedidos', pedidoRoutes);
 app.use('/upload', uploadRoutes);
+app.use('/auth', authRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API Shoe Repair Lambda funcionando!' });
