@@ -22,7 +22,8 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          DYNAMODB_TABLE: !Ref ShoeRepairClientesTable
+          DYNAMODB_CLIENTE_TABLE: !Ref ShoeRepairClientesTable
+          DYNAMODB_PEDIDO_TABLE: !Ref ShoeRepairPedidosTable
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
