@@ -17,7 +17,6 @@ exports.uploadFotos = async (req, res) => {
         Key: `fotos/${Date.now()}-${file.originalname}`,
         Body: file.buffer,
         ContentType: file.mimetype,
-        ACL: 'public-read',
       };
       const data = await s3.upload(params).promise();
       uploadedUrls.push(data.Location);
