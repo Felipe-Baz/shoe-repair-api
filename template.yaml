@@ -24,6 +24,23 @@ Resources:
         Variables:
           DYNAMODB_CLIENTE_TABLE: !Ref ShoeRepairClientesTable
           DYNAMODB_PEDIDO_TABLE: !Ref ShoeRepairPedidosTable
+          S3_BUCKET_NAME: !Ref ShoeRepairFotosBucket
+  ShoeRepairFotosBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'shoe-repair-fotos-${AWS::AccountId}-${AWS::Region}'
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+            AllowedOrigins:
+              - '*'
+            MaxAge: 3000
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:

@@ -5,11 +5,15 @@ const serverless = require('serverless-http');
 const clienteRoutes = require('./src/routes/clienteRoutes');
 const pedidoRoutes = require('./src/routes/pedidoRoutes');
 
+
+const uploadRoutes = require('./src/routes/uploadRoutes');
+
 const app = express();
 app.use(express.json());
 
 app.use('/clientes', clienteRoutes);
 app.use('/pedidos', pedidoRoutes);
+app.use('/upload', uploadRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API Shoe Repair Lambda funcionando!' });
@@ -19,4 +23,4 @@ app.get('/', (req, res) => {
 module.exports = app;
 
 // Exporta o handler para AWS Lambda
-export const handler = serverless(app);
+module.exports.handler = serverless(app);
