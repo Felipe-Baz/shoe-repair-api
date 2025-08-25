@@ -60,6 +60,17 @@ Resources:
         - AttributeName: id
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
+  ShoeRepairPedidosTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ShoeRepairPedidos
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
   ShoeRepairApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
