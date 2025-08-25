@@ -23,7 +23,6 @@ Resources:
       Environment:
         Variables:
           DYNAMODB_TABLE: !Ref ShoeRepairClientesTable
-          AWS_REGION: !Ref AWS::Region
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
