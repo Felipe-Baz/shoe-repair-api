@@ -4,8 +4,6 @@ const serverless = require('serverless-http');
 
 const clienteRoutes = require('./src/routes/clienteRoutes');
 const pedidoRoutes = require('./src/routes/pedidoRoutes');
-
-
 const uploadRoutes = require('./src/routes/uploadRoutes');
 
 const app = express();
