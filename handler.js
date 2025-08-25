@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const awsServerlessExpress = require('aws-serverless-express');
+const serverless = require('serverless-http');
 
 const clienteRoutes = require('./src/routes/clienteRoutes');
 const pedidoRoutes = require('./src/routes/pedidoRoutes');
@@ -15,9 +15,8 @@ app.get('/', (req, res) => {
   res.json({ message: 'API Shoe Repair Lambda funcionando!' });
 });
 
-// Exporta o app para uso local e para integração com Lambda (via adaptador, se necessário)
+// Exporta o app para uso local
 module.exports = app;
 
-const server = awsServerlessExpress.createServer(app);
-
-exports.handler = (event, context) => awsServerlessExpress.proxy(server, event, context);
+// Exporta o handler para AWS Lambda
+export const handler = serverless(app);
