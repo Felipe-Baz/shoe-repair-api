@@ -66,6 +66,12 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: 'arn:aws:logs:*:*:*'
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource: !Sub 'arn:aws:s3:::${ShoeRepairFotosBucket}/*'
   ShoeRepairClientesTable:
     Type: AWS::DynamoDB::Table
     Properties:
