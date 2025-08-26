@@ -10,5 +10,7 @@ router.get('/:id', pedidoController.getPedido);
 router.post('/', pedidoController.createPedido);
 router.put('/:id', pedidoController.updatePedido);
 router.delete('/:id', pedidoController.deletePedido);
+// Nova rota para atualizar apenas o status do pedido
+router.patch('/:id/status', pedidoController.updatePedidoStatus);
 
 module.exports = router;
