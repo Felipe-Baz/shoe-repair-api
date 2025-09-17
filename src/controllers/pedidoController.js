@@ -1,5 +1,5 @@
 const pedidoService = require('../services/pedidoService');
-const { enviarStatusPedido } = require('./whatsappService');
+const { enviarStatusPedido } = require('../services/whatsappService');
 
 exports.listPedidos = async (req, res) => {
   try {
