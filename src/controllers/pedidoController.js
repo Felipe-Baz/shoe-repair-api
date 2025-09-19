@@ -109,7 +109,8 @@ exports.createPedido = async (req, res) => {
       precoTotal, 
       dataPrevistaEntrega, 
       departamento, 
-      observacoes 
+      observacoes,
+      status
     } = req.body;
 
     // Validação básica
@@ -142,13 +143,13 @@ exports.createPedido = async (req, res) => {
       dataPrevistaEntrega,
       departamento: departamento || 'Atendimento',
       observacoes: observacoes || '',
-      status: 'Atendimento - Aguardando Aprovação',
+      status: status || 'Atendimento - Aguardando Aprovação',
       dataCriacao: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       statusHistory: [
         {
-          status: 'Atendimento - Aguardando Aprovação',
+          status: status || 'Atendimento - Aguardando Aprovação',
           date: new Date().toISOString().split('T')[0],
           time: new Date().toTimeString().split(' ')[0].substring(0, 5),
           userId: userId || 'sistema',
