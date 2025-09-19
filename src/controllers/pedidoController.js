@@ -143,13 +143,13 @@ exports.createPedido = async (req, res) => {
       dataPrevistaEntrega,
       departamento: departamento || 'Atendimento',
       observacoes: observacoes || '',
-      status: status || 'Atendimento - Aguardando Aprovação',
+      status: status || 'Atendimento - Orçado',
       dataCriacao: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       statusHistory: [
         {
-          status: status || 'Atendimento - Aguardando Aprovação',
+          status: status || 'Atendimento - Orçado',
           date: new Date().toISOString().split('T')[0],
           time: new Date().toTimeString().split(' ')[0].substring(0, 5),
           userId: userId || 'sistema',
