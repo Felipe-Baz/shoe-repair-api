@@ -4,16 +4,28 @@ const { enviarStatusPedido } = require('../services/whatsappService');
 exports.listPedidos = async (req, res) => {
   try {
     const { role, sub: userId } = req.user || {};
-    let pedidos;
+    let pedidos = await pedidoService.listPedidos();
+    let statusPermitidos = [];
     switch (role) {
       case 'admin':
-        pedidos = await pedidoService.listPedidos();
+        // Admin pode ver todos os status
         break;
-      case 'cliente':
-        pedidos = (await pedidoService.listPedidos()).filter(p => p.clienteId === userId);
+      case 'colagem':
+        // departamento de Colagem só pode ver alguns status
+        statusPermitidos = ['colagem_em_andamento', 'colagem_a_fazer', 'colagem_pronto'];
+        pedidos = pedidos.filter(p => p.clienteId === userId && statusPermitidos.includes(p.status));
+        break;
+      case 'lavanderia':
+        // departamento de Lavanderia só pode ver alguns status
+        statusPermitidos = ['lavanderia_em_andamento', 'lavanderia_a_fazer', 'lavanderia_pronto'];
+        pedidos = pedidos.filter(p => p.clienteId === userId && statusPermitidos.includes(p.status));
         break;
       default:
         return res.status(403).json({ error: 'Acesso negado.' });
+    }
+    // Se não for admin, filtra por statusPermitidos (admin vê todos)
+    if (role === 'admin' && statusPermitidos.length > 0) {
+      pedidos = pedidos.filter(p => statusPermitidos.includes(p.status));
     }
     res.json(pedidos);
   } catch (err) {
