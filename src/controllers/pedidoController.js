@@ -3,7 +3,18 @@ const { enviarStatusPedido } = require('../services/whatsappService');
 
 exports.listPedidos = async (req, res) => {
   try {
-    const pedidos = await pedidoService.listPedidos();
+    const { role, sub: userId } = req.user || {};
+    let pedidos;
+    switch (role) {
+      case 'admin':
+        pedidos = await pedidoService.listPedidos();
+        break;
+      case 'cliente':
+        pedidos = (await pedidoService.listPedidos()).filter(p => p.clienteId === userId);
+        break;
+      default:
+        return res.status(403).json({ error: 'Acesso negado.' });
+    }
     res.json(pedidos);
   } catch (err) {
     res.status(500).json({ error: err.message });

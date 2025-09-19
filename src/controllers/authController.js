@@ -8,12 +8,12 @@ const REFRESH_SECRET = process.env.REFRESH_SECRET || 'refreshchangeme';
 const REFRESH_EXPIRES = '7d';
 
 exports.register = async (req, res) => {
-  const { email, password, nome } = req.body;
+  const { email, password, nome, role } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios.' });
   const exists = await userService.getUserByEmail(email);
   if (exists) return res.status(409).json({ error: 'Usuário já existe.' });
-  const user = await userService.createUser({ email, password, nome });
-  res.status(201).json({ id: user.id, email: user.email, nome: user.nome });
+  const user = await userService.createUser({ email, password, nome, role });
+  res.status(201).json({ id: user.id, email: user.email, nome: user.nome, role: user.role });
 };
 
 exports.login = async (req, res) => {
@@ -21,7 +21,7 @@ exports.login = async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios.' });
   const user = await userService.getUserByEmail(email);
   if (!user || user.password !== password) return res.status(401).json({ error: 'Credenciais inválidas.' });
-  const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+  const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
   const refreshToken = jwt.sign({ sub: user.id }, REFRESH_SECRET, { expiresIn: REFRESH_EXPIRES });
   res.json({ token, refreshToken });
 };

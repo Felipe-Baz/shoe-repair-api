@@ -4,8 +4,8 @@ const tableName = process.env.DYNAMODB_USER_TABLE || 'ShoeRepairUsers';
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient({ region: process.env.AWS_REGION });
 
-exports.createUser = async ({ email, password, nome }) => {
-  const user = { id: uuidv4(), email, password, nome };
+exports.createUser = async ({ email, password, nome, role }) => {
+  const user = { id: uuidv4(), email, password, nome, role };
   const params = { TableName: tableName, Item: user };
   await dynamoDb.put(params).promise();
   return user;

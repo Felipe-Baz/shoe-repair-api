@@ -49,7 +49,7 @@ Resources:
     Properties:
       Name: /shoe-repair-api/jwt-expires
       Type: String
-      Value: 15m
+      Value: 10h
 
   RefreshExpires:
     Type: AWS::SSM::Parameter
