@@ -52,3 +52,22 @@ exports.deletePedido = async (id) => {
   await dynamoDb.delete(params).promise();
   return true;
 };
+
+exports.updatePedidoStatus = async (id, status) => {
+  const params = {
+    TableName: tableName,
+    Key: { id },
+    UpdateExpression: 'set #status = :status, #updatedAt = :updatedAt',
+    ExpressionAttributeNames: {
+      '#status': 'status',
+      '#updatedAt': 'updatedAt'
+    },
+    ExpressionAttributeValues: {
+      ':status': status,
+      ':updatedAt': new Date().toISOString()
+    },
+    ReturnValues: 'ALL_NEW',
+  };
+  const data = await dynamoDb.update(params).promise();
+  return data.Attributes;
+};

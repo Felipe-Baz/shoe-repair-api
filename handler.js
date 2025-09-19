@@ -8,6 +8,7 @@ const clienteRoutes = require('./src/routes/clienteRoutes');
 const pedidoRoutes = require('./src/routes/pedidoRoutes');
 const uploadRoutes = require('./src/routes/uploadRoutes');
 const authRoutes = require('./src/routes/authRoutes');
+const statusRoutes = require('./src/routes/statusRoutes');
 
 const app = express();
 app.use(cors());
@@ -17,6 +18,7 @@ app.use('/clientes', clienteRoutes);
 app.use('/pedidos', pedidoRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/auth', authRoutes);
+app.use('/status', statusRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API Shoe Repair Lambda funcionando!' });

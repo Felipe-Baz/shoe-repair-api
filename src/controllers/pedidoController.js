@@ -5,31 +5,77 @@ exports.listPedidosStatus = async (req, res) => {
   try {
     const { role, sub: userId } = req.user || {};
     let pedidos = await pedidoService.listPedidos();
-    let statusPermitidos = [];
-    switch (role) {
+    
+    // Filtrar pedidos baseado no cargo do usuário
+    switch (role?.toLowerCase()) {
       case 'admin':
-        // Admin pode ver todos os status
+        // Admin vê todos os pedidos
         break;
-      case 'colagem':
-        // departamento de Colagem só pode ver alguns status
-        statusPermitidos = ['colagem_em_andamento', 'colagem_a_fazer', 'colagem_pronto'];
-        pedidos = pedidos.filter(p => p.clienteId === userId && statusPermitidos.includes(p.status));
+      case 'lavagem':
+        // Lavagem vê pedidos em "Lavagem - *" + pedidos vindos do atendimento
+        pedidos = pedidos.filter(p => 
+          p.status?.startsWith('Lavagem - ') || 
+          p.status === 'Atendimento - Aprovado'
+        );
         break;
-      case 'lavanderia':
-        // departamento de Lavanderia só pode ver alguns status
-        statusPermitidos = ['lavanderia_em_andamento', 'lavanderia_a_fazer', 'lavanderia_pronto'];
-        pedidos = pedidos.filter(p => p.clienteId === userId && statusPermitidos.includes(p.status));
+      case 'pintura':
+        // Pintura vê pedidos em "Pintura - *" + pedidos vindos da lavagem
+        pedidos = pedidos.filter(p => 
+          p.status?.startsWith('Pintura - ') || 
+          p.status === 'Lavagem - Concluído'
+        );
+        break;
+      case 'atendimento':
+        // Atendimento vê todos os pedidos (para acompanhamento)
         break;
       default:
-        return res.status(403).json({ error: 'Acesso negado.' });
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Acesso negado.' 
+        });
     }
-    // Se não for admin, filtra por statusPermitidos (admin vê todos)
-    if (role === 'admin' && statusPermitidos.length > 0) {
-      pedidos = pedidos.filter(p => statusPermitidos.includes(p.status));
-    }
-    res.json(pedidos);
+
+    // Transformar pedidos para o formato esperado pelo frontend
+    const pedidosFormatados = pedidos.map(pedido => ({
+      id: pedido.id,
+      clientName: pedido.nomeCliente || pedido.clientName,
+      clientCpf: pedido.cpfCliente || pedido.clientCpf,
+      sneaker: pedido.modeloTenis || pedido.sneaker,
+      serviceType: pedido.tipoServico || pedido.serviceType,
+      description: pedido.descricaoServicos || pedido.description,
+      price: pedido.preco || pedido.price,
+      status: pedido.status,
+      createdDate: pedido.dataCriacao || pedido.createdDate,
+      expectedDate: pedido.dataPrevistaEntrega || pedido.expectedDate,
+      statusHistory: pedido.statusHistory || [
+        {
+          status: pedido.status,
+          date: pedido.dataCriacao || new Date().toISOString().split('T')[0],
+          time: new Date().toTimeString().split(' ')[0].substring(0, 5),
+          userId: userId,
+          userName: req.user?.email || 'Sistema'
+        }
+      ],
+      clientId: pedido.clienteId || pedido.clientId,
+      modeloTenis: pedido.modeloTenis,
+      tipoServico: pedido.tipoServico,
+      descricaoServicos: pedido.descricaoServicos,
+      preco: pedido.preco,
+      dataPrevistaEntrega: pedido.dataPrevistaEntrega,
+      dataCriacao: pedido.dataCriacao,
+      fotos: pedido.fotos || [],
+      observacoes: pedido.observacoes
+    }));
+
+    res.json({
+      success: true,
+      data: pedidosFormatados
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
   }
 };
 
@@ -84,15 +130,101 @@ exports.deletePedido = async (req, res) => {
 exports.updatePedidoStatus = async (req, res) => {
   try {
     const { status } = req.body;
+    const { role, sub: userId, email: userEmail } = req.user || {};
+    
     if (!status) {
-      return res.status(400).json({ error: 'Status é obrigatório' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Status é obrigatório' 
+      });
     }
-    const atualizado = await pedidoService.updatePedidoStatus(req.params.id, status);
-    if (!atualizado) return res.status(404).json({ error: 'Pedido não encontrado' });
-    const { telefoneCliente, nomeCliente, descricaoServicos, modeloTenis } = atualizado;
-    await enviarStatusPedido(telefoneCliente, nomeCliente, status, descricaoServicos, modeloTenis);
-    res.json(atualizado);
+
+    // Validar permissões baseado no cargo
+    const canUpdateStatus = (userRole, newStatus) => {
+      switch (userRole?.toLowerCase()) {
+        case 'admin':
+          return true; // Admin pode alterar qualquer status
+        case 'lavagem':
+          return newStatus.startsWith('Lavagem - ');
+        case 'pintura':
+          return newStatus.startsWith('Pintura - ');
+        case 'atendimento':
+          return newStatus.startsWith('Atendimento - ');
+        default:
+          return false;
+      }
+    };
+
+    if (!canUpdateStatus(role, status)) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Usuário não tem permissão para alterar para este status' 
+      });
+    }
+
+    // Buscar pedido atual para pegar o histórico
+    const pedidoAtual = await pedidoService.getPedido(req.params.id);
+    if (!pedidoAtual) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Pedido não encontrado' 
+      });
+    }
+
+    // Criar novo item do histórico
+    const novoHistorico = {
+      status: status,
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toTimeString().split(' ')[0].substring(0, 5),
+      userId: userId,
+      userName: userEmail || 'Sistema'
+    };
+
+    // Atualizar histórico
+    const statusHistory = pedidoAtual.statusHistory || [];
+    statusHistory.push(novoHistorico);
+
+    // Atualizar pedido com novo status e histórico
+    const updates = {
+      status: status,
+      statusHistory: statusHistory,
+      updatedAt: new Date().toISOString()
+    };
+
+    const atualizado = await pedidoService.updatePedido(req.params.id, updates);
+    
+    if (!atualizado) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Pedido não encontrado' 
+      });
+    }
+
+    // Enviar notificação via WhatsApp se os dados necessários estiverem disponíveis
+    if (atualizado.telefoneCliente && atualizado.nomeCliente) {
+      try {
+        const { telefoneCliente, nomeCliente, descricaoServicos, modeloTenis } = atualizado;
+        await enviarStatusPedido(telefoneCliente, nomeCliente, status, descricaoServicos, modeloTenis);
+      } catch (whatsappError) {
+        console.error('Erro ao enviar WhatsApp:', whatsappError);
+        // Não falha a requisição se o WhatsApp der erro
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: atualizado.id,
+        status: atualizado.status,
+        statusHistory: atualizado.statusHistory,
+        updatedAt: atualizado.updatedAt
+      },
+      message: 'Status atualizado com sucesso'
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
   }
 };
