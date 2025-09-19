@@ -100,10 +100,74 @@ exports.getPedido = async (req, res) => {
 
 exports.createPedido = async (req, res) => {
   try {
-    const novoPedido = await pedidoService.createPedido(req.body);
-    res.status(201).json(novoPedido);
+    const { 
+      clienteId, 
+      modeloTenis, 
+      servicos, 
+      fotos, 
+      precoTotal, 
+      dataPrevistaEntrega, 
+      departamento, 
+      observacoes 
+    } = req.body;
+
+    // Validação básica
+    if (!clienteId || !modeloTenis || !servicos || !Array.isArray(servicos) || servicos.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Campos obrigatórios: clienteId, modeloTenis e servicos (array não vazio)' 
+      });
+    }
+
+    // Validar estrutura dos serviços
+    for (const servico of servicos) {
+      if (!servico.id || !servico.nome || typeof servico.preco !== 'number') {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Cada serviço deve ter: id, nome e preco (número)' 
+        });
+      }
+    }
+
+    const { role, sub: userId, email: userEmail } = req.user || {};
+
+    // Estruturar dados do pedido
+    const dadosPedido = {
+      clienteId,
+      modeloTenis,
+      servicos,
+      fotos: fotos || [],
+      precoTotal: precoTotal || servicos.reduce((total, servico) => total + servico.preco, 0),
+      dataPrevistaEntrega,
+      departamento: departamento || 'Atendimento',
+      observacoes: observacoes || '',
+      status: 'Atendimento - Aguardando Aprovação',
+      dataCriacao: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      statusHistory: [
+        {
+          status: 'Atendimento - Aguardando Aprovação',
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toTimeString().split(' ')[0].substring(0, 5),
+          userId: userId || 'sistema',
+          userName: userEmail || 'Sistema'
+        }
+      ]
+    };
+
+    const novoPedido = await pedidoService.createPedido(dadosPedido);
+    
+    res.status(201).json({
+      success: true,
+      data: novoPedido,
+      message: 'Pedido criado com sucesso'
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
   }
 };
 

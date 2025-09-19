@@ -17,7 +17,28 @@ exports.getPedido = async (id) => {
 };
 
 exports.createPedido = async (pedido) => {
-  const novoPedido = { ...pedido, id: uuidv4() };
+  // Estruturar o pedido com todos os campos necessários
+  const novoPedido = { 
+    id: uuidv4(),
+    clienteId: pedido.clienteId,
+    modeloTenis: pedido.modeloTenis,
+    servicos: pedido.servicos || [],
+    fotos: pedido.fotos || [],
+    precoTotal: pedido.precoTotal,
+    dataPrevistaEntrega: pedido.dataPrevistaEntrega,
+    departamento: pedido.departamento || 'Atendimento',
+    observacoes: pedido.observacoes || '',
+    status: pedido.status || 'Atendimento - Aguardando Aprovação',
+    dataCriacao: pedido.dataCriacao || new Date().toISOString(),
+    createdAt: pedido.createdAt || new Date().toISOString(),
+    updatedAt: pedido.updatedAt || new Date().toISOString(),
+    statusHistory: pedido.statusHistory || [],
+    // Manter compatibilidade com campos antigos se existirem
+    tipoServico: pedido.tipoServico,
+    descricaoServicos: pedido.descricaoServicos,
+    preco: pedido.preco
+  };
+
   const params = { TableName: tableName, Item: novoPedido };
   await dynamoDb.put(params).promise();
   return novoPedido;
