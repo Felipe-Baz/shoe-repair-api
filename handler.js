@@ -21,7 +21,7 @@ app.use('/auth', authRoutes);
 app.use('/status', statusRoutes);
 
 app.get('/', (req, res) => {
-  res.json({ message: 'API Shoe Repair Lambda funcionando!' });
+  res.status(200).json({ message: 'API Shoe Repair Lambda funcionando!' });
 });
 
 // Exporta o app para uso local

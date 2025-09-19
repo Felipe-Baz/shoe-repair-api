@@ -67,7 +67,7 @@ exports.listPedidosStatus = async (req, res) => {
       observacoes: pedido.observacoes
     }));
 
-    res.json({
+    res.status(200).json({
       success: true,
       data: pedidosFormatados
     });
@@ -82,7 +82,8 @@ exports.listPedidosStatus = async (req, res) => {
 exports.listPedidos = async (req, res) => {
   try {
     let pedidos = await pedidoService.listPedidos();
-    res.json(pedidos);
+    // Sempre retorna 200, nunca 304
+    res.status(200).json(pedidos);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -92,7 +93,7 @@ exports.getPedido = async (req, res) => {
   try {
     const pedido = await pedidoService.getPedido(req.params.id);
     if (!pedido) return res.status(404).json({ error: 'Pedido não encontrado' });
-    res.json(pedido);
+    res.status(200).json(pedido);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -175,7 +176,7 @@ exports.updatePedido = async (req, res) => {
   try {
     const atualizado = await pedidoService.updatePedido(req.params.id, req.body);
     if (!atualizado) return res.status(404).json({ error: 'Pedido não encontrado' });
-    res.json(atualizado);
+    res.status(200).json(atualizado);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -185,7 +186,7 @@ exports.deletePedido = async (req, res) => {
   try {
     const deletado = await pedidoService.deletePedido(req.params.id);
     if (!deletado) return res.status(404).json({ error: 'Pedido não encontrado' });
-    res.json({ deleted: true });
+    res.status(200).json({ deleted: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -275,7 +276,7 @@ exports.updatePedidoStatus = async (req, res) => {
       }
     }
 
-    res.json({
+    res.status(200).json({
       success: true,
       data: {
         id: atualizado.id,

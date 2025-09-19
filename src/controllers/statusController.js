@@ -51,7 +51,8 @@ exports.getStatusColumns = async (req, res) => {
       });
     }
 
-    res.json({
+    // Sempre retorna 200, nunca 304
+    res.status(200).json({
       success: true,
       data: columns
     });

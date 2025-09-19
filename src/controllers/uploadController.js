@@ -49,7 +49,7 @@ exports.uploadFotos = async (req, res) => {
     const pedidoService = require('../services/pedidoService');
     await pedidoService.updatePedido(pedidoId, { fotos: uploadedUrls });
 
-    res.json({ urls: uploadedUrls });
+    res.status(200).json({ urls: uploadedUrls });
 
 // Função auxiliar para pegar a extensão do arquivo
 function getFileExtension(filename) {

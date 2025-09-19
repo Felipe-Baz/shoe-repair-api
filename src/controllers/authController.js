@@ -23,7 +23,7 @@ exports.login = async (req, res) => {
   if (!user || user.password !== password) return res.status(401).json({ error: 'Credenciais inválidas.' });
   const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
   const refreshToken = jwt.sign({ sub: user.id }, REFRESH_SECRET, { expiresIn: REFRESH_EXPIRES });
-  res.json({ token, refreshToken });
+  res.status(200).json({ token, refreshToken });
 };
 
 exports.refreshToken = async (req, res) => {
@@ -34,7 +34,7 @@ exports.refreshToken = async (req, res) => {
     const user = await userService.getUserById(payload.sub);
     if (!user) return res.status(401).json({ error: 'Usuário não encontrado.' });
     const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-    res.json({ token });
+    res.status(200).json({ token });
   } catch (err) {
     res.status(401).json({ error: 'refreshToken inválido.' });
   }
