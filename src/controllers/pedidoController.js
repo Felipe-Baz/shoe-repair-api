@@ -1,7 +1,7 @@
 const pedidoService = require('../services/pedidoService');
 const { enviarStatusPedido } = require('../services/whatsappService');
 
-exports.listPedidos = async (req, res) => {
+exports.listPedidosStatus = async (req, res) => {
   try {
     const { role, sub: userId } = req.user || {};
     let pedidos = await pedidoService.listPedidos();
@@ -27,6 +27,15 @@ exports.listPedidos = async (req, res) => {
     if (role === 'admin' && statusPermitidos.length > 0) {
       pedidos = pedidos.filter(p => statusPermitidos.includes(p.status));
     }
+    res.json(pedidos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.listPedidos = async (req, res) => {
+  try {
+    let pedidos = await pedidoService.listPedidos();
     res.json(pedidos);
   } catch (err) {
     res.status(500).json({ error: err.message });
