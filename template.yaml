@@ -8,8 +8,16 @@ Parameters:
     Type: String
     Description: S3 key for Lambda code zip
 Resources:
+  # CloudWatch Log Group para a Lambda
+  ShoeRepairApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${ShoeRepairApiFunction}'
+      RetentionInDays: 14
+
   ShoeRepairApiFunction:
     Type: AWS::Lambda::Function
+    DependsOn: ShoeRepairApiLogGroup
     Properties:
       FunctionName: ShoeRepairApiFunction
       Handler: handler.handler
@@ -19,7 +27,7 @@ Resources:
         S3Bucket: !Ref LambdaS3Bucket
         S3Key: !Ref LambdaS3Key
       MemorySize: 256
-      Timeout: 10
+      Timeout: 30
       Environment:
         Variables:
           DYNAMODB_CLIENTE_TABLE: !Ref ShoeRepairClientesTable

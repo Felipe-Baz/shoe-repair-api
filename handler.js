@@ -15,6 +15,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Middleware para logs de todas as requisições
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  console.log('[Request Headers]:', JSON.stringify(req.headers, null, 2));
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('[Request Body]:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
+
 app.use('/clientes', clienteRoutes);
 app.use('/pedidos', pedidoRoutes);
 app.use('/upload', uploadRoutes);
@@ -23,11 +33,38 @@ app.use('/status', statusRoutes);
 app.use('/dashboard', dashboardRoutes);
 
 app.get('/', (req, res) => {
+  console.log('[Handler] Requisição recebida na rota raiz');
   res.status(200).json({ message: 'API Shoe Repair Lambda funcionando!' });
+});
+
+// Middleware para logs de todas as requisições
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  console.log('[Request Headers]:', JSON.stringify(req.headers, null, 2));
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('[Request Body]:', JSON.stringify(req.body, null, 2));
+  }
+  next();
 });
 
 // Exporta o app para uso local
 module.exports = app;
 
 // Exporta o handler para AWS Lambda
-module.exports.handler = serverless(app);
+const serverlessHandler = serverless(app);
+
+module.exports.handler = async (event, context) => {
+  console.log('[Lambda] Função iniciada');
+  console.log('[Lambda] Event:', JSON.stringify(event, null, 2));
+  console.log('[Lambda] Context:', JSON.stringify(context, null, 2));
+  
+  try {
+    const result = await serverlessHandler(event, context);
+    console.log('[Lambda] Resposta gerada:', JSON.stringify(result, null, 2));
+    return result;
+  } catch (error) {
+    console.error('[Lambda] Erro na execução:', error);
+    console.error('[Lambda] Stack trace:', error.stack);
+    throw error;
+  }
+};
