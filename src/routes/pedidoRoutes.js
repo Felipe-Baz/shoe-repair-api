@@ -15,5 +15,7 @@ router.delete('/:id', pedidoController.deletePedido);
 router.patch('/:id/status', pedidoController.updatePedidoStatus);
 // Nova rota para gerar PDF do pedido
 router.post('/document/pdf', pedidoController.generatePedidoPdf);
+// Nova rota para listar PDFs salvos de um pedido
+router.get('/:id/pdfs', pedidoController.listPedidoPdfs);
 
 module.exports = router;

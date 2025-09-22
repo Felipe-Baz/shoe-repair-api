@@ -317,13 +317,47 @@ exports.generatePedidoPdf = async (req, res) => {
       });
     }
 
-    // Gerar PDF
-    const pdfBuffer = await pdfService.generatePedidoPdf(pedidoId);
+    console.log('Iniciando geração de PDF para pedido:', pedidoId);
+
+    // Tentar primeiro o PDF completo
+    let pdfResult;
+    try {
+      pdfResult = await pdfService.generatePedidoPdf(pedidoId);
+      console.log('PDF complexo gerado com sucesso');
+    } catch (complexError) {
+      console.error('Erro no PDF complexo, tentando versão simplificada:', complexError.message);
+      
+      // Buscar dados do pedido para obter clienteId para o fallback
+      let clienteId = 'unknown';
+      try {
+        const pedidoService = require('../services/pedidoService');
+        const pedido = await pedidoService.getPedido(pedidoId);
+        if (pedido && pedido.clienteId) {
+          clienteId = pedido.clienteId;
+        }
+      } catch (err) {
+        console.warn('Não foi possível obter clienteId para fallback:', err.message);
+      }
+      
+      pdfResult = await pdfService.generateSimplePdf(pedidoId, clienteId);
+      console.log('PDF simplificado gerado como fallback');
+    }
+
+    // Extrair buffer e informações do S3
+    const pdfBuffer = pdfResult.buffer || pdfResult; // Compatibilidade com versão antiga
+    const s3Info = pdfResult.s3;
 
     // Definir headers para download do PDF
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="pedido-${pedidoId}.pdf"`);
     res.setHeader('Content-Length', pdfBuffer.length);
+    
+    // Adicionar informações do S3 no header (se disponível)
+    if (s3Info) {
+      res.setHeader('X-S3-URL', s3Info.url);
+      res.setHeader('X-S3-Key', s3Info.key);
+      console.log('PDF também disponível em:', s3Info.url);
+    }
 
     // Enviar o PDF como blob
     res.send(pdfBuffer);
@@ -342,6 +376,84 @@ exports.generatePedidoPdf = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor ao gerar PDF',
+      error: error.message
+    });
+  }
+};
+
+// GET /pedidos/:id/pdfs - Listar PDFs salvos no S3 para um pedido
+exports.listPedidoPdfs = async (req, res) => {
+  try {
+    const { id: pedidoId } = req.params;
+    
+    if (!pedidoId) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID do pedido é obrigatório'
+      });
+    }
+
+    // Verificar se o usuário tem permissão
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Usuário não autenticado'
+      });
+    }
+
+    // Buscar dados do pedido para obter clienteId
+    const pedidoService = require('../services/pedidoService');
+    const pedido = await pedidoService.getPedido(pedidoId);
+    
+    if (!pedido) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pedido não encontrado'
+      });
+    }
+
+    const AWS = require('aws-sdk');
+    const s3 = new AWS.S3();
+    const bucket = process.env.S3_BUCKET_NAME;
+    
+    if (!bucket) {
+      return res.status(500).json({
+        success: false,
+        message: 'Bucket S3 não configurado'
+      });
+    }
+
+    // Listar PDFs do pedido no S3
+    const prefix = `User/${pedido.clienteId}/pedidos/${pedidoId}/pdf/`;
+    const listParams = {
+      Bucket: bucket,
+      Prefix: prefix
+    };
+
+    const result = await s3.listObjectsV2(listParams).promise();
+    
+    const pdfs = result.Contents.map(obj => ({
+      key: obj.Key,
+      lastModified: obj.LastModified,
+      size: obj.Size,
+      url: `https://${bucket}.s3.amazonaws.com/${obj.Key}`,
+      filename: obj.Key.split('/').pop()
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        pedidoId: pedidoId,
+        clienteId: pedido.clienteId,
+        pdfs: pdfs
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao listar PDFs do pedido:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor ao listar PDFs',
       error: error.message
     });
   }
