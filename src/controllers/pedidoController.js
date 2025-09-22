@@ -44,7 +44,7 @@ exports.listPedidosStatus = async (req, res) => {
       serviceType: pedido.tipoServico || pedido.serviceType,
       description: pedido.descricaoServicos || pedido.description,
       price: pedido.preco || pedido.price || pedido.precoTotal,
-      servicos: pedido.servicos.join(', '),
+      servicos: pedido.servicos.map(servico => servico.nome).join(', '),
       status: pedido.status,
       createdDate: pedido.dataCriacao || pedido.createdDate,
       expectedDate: pedido.dataPrevistaEntrega || pedido.expectedDate,
