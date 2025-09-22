@@ -1,6 +1,4 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs').promises;
-const path = require('path');
+const { jsPDF } = require('jspdf');
 const pedidoService = require('./pedidoService');
 const clienteService = require('./clienteService');
 
@@ -22,80 +20,8 @@ class PdfService {
     }).format(value);
   }
 
-  // Função para processar template HTML
-  async processTemplate(templatePath, data) {
-    try {
-      let template = await fs.readFile(templatePath, 'utf8');
-      
-      // Substituir variáveis simples
-      for (const [key, value] of Object.entries(data)) {
-        const regex = new RegExp(`{{${key}}}`, 'g');
-        template = template.replace(regex, value || '');
-      }
-      
-      return template;
-    } catch (error) {
-      console.error('Erro ao processar template:', error);
-      throw new Error('Erro ao processar template HTML');
-    }
-  }
-
-  // Função para gerar HTML dos serviços
-  generateServicesRows(servicos, tipoServico, descricaoServicos, preco) {
-    let rows = '';
-    
-    // Usar nova estrutura de serviços se disponível
-    if (servicos && servicos.length > 0) {
-      servicos.forEach(servico => {
-        rows += `
-          <tr>
-            <td>${servico.nome || 'Serviço não especificado'}</td>
-            <td>${servico.descricao || '-'}</td>
-            <td>${this.formatCurrency(servico.preco)}</td>
-          </tr>
-        `;
-      });
-    } else {
-      // Fallback para estrutura antiga
-      rows += `
-        <tr>
-          <td>${tipoServico || 'Serviço não especificado'}</td>
-          <td>${descricaoServicos || '-'}</td>
-          <td>${this.formatCurrency(preco)}</td>
-        </tr>
-      `;
-    }
-    
-    return rows;
-  }
-
-  // Função para gerar HTML do histórico de status
-  generateStatusHistoryItems(statusHistory) {
-    if (!statusHistory || statusHistory.length === 0) {
-      return '<p>Nenhum histórico de status disponível.</p>';
-    }
-    
-    let items = '';
-    statusHistory.forEach(item => {
-      const date = this.formatDate(item.date);
-      const time = item.time || '';
-      const user = item.userName || item.userId || 'Sistema';
-      
-      items += `
-        <div class="status-item">
-          <span><strong>${item.status}</strong> - ${user}</span>
-          <span>${date} ${time}</span>
-        </div>
-      `;
-    });
-    
-    return items;
-  }
-
   // Função principal para gerar PDF do pedido
   async generatePedidoPdf(pedidoId) {
-    let browser = null;
-    
     try {
       // Buscar dados do pedido
       const pedido = await pedidoService.getPedido(pedidoId);
@@ -109,79 +35,169 @@ class PdfService {
         throw new Error(`Cliente com ID ${pedido.clienteId} não encontrado`);
       }
 
-      // Preparar dados para o template
-      const templateData = {
-        pedidoId: pedido.id,
-        dataCriacao: this.formatDate(pedido.createdAt || pedido.dataCriacao),
-        dataPrevista: this.formatDate(pedido.dataPrevistaEntrega),
-        status: pedido.status || 'Não informado',
-        departamento: pedido.departamento || 'Não informado',
-        
-        // Dados do cliente
-        clienteNome: cliente.nome || 'Não informado',
-        clienteCpf: cliente.cpf || 'Não informado',
-        clienteTelefone: cliente.telefone || 'Não informado',
-        clienteEmail: cliente.email || 'Não informado',
-        clienteEndereco: this.formatClienteEndereco(cliente),
-        
-        // Dados do serviço
-        modeloTenis: pedido.modeloTenis || 'Não informado',
-        precoTotal: this.formatCurrency(pedido.precoTotal || pedido.preco),
-        observacoes: pedido.observacoes || pedido.descricaoServicos || '',
-        
-        // Dados dinâmicos
-        servicosRows: this.generateServicesRows(
-          pedido.servicos, 
-          pedido.tipoServico, 
-          pedido.descricaoServicos, 
-          pedido.preco
-        ),
-        statusHistoryItems: this.generateStatusHistoryItems(pedido.statusHistory),
-        dataGeracao: this.formatDate(new Date().toISOString())
-      };
+      // Criar documento PDF
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      let yPosition = 20;
 
-      // Processar template
-      const templatePath = path.join(__dirname, '../templates/pedido-pdf.html');
-      const htmlContent = await this.processTemplate(templatePath, templateData);
+      // Configurar fonte padrão
+      doc.setFont('helvetica', 'normal');
 
-      // Configurar puppeteer
-      browser = await puppeteer.launch({
-        headless: 'new',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage'
-        ]
-      });
-
-      const page = await browser.newPage();
+      // Cabeçalho
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(44, 90, 160); // Cor azul
+      doc.text('SHOE REPAIR', pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 10;
       
-      // Definir conteúdo HTML
-      await page.setContent(htmlContent, {
-        waitUntil: 'networkidle0'
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Ordem de Serviço', pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 20;
+
+      // Linha separadora
+      doc.setDrawColor(44, 90, 160);
+      doc.setLineWidth(1);
+      doc.line(20, yPosition, pageWidth - 20, yPosition);
+      yPosition += 15;
+
+      // Informações do Pedido
+      doc.setFontSize(14);
+      doc.setTextColor(44, 90, 160);
+      doc.text('Informações do Pedido', 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      
+      const pedidoInfo = [
+        `Nº do Pedido: ${pedido.id}`,
+        `Data de Criação: ${this.formatDate(pedido.createdAt || pedido.dataCriacao)}`,
+        `Data Prevista: ${this.formatDate(pedido.dataPrevistaEntrega)}`,
+        `Status Atual: ${pedido.status || 'Não informado'}`,
+        `Departamento: ${pedido.departamento || 'Não informado'}`
+      ];
+
+      pedidoInfo.forEach(info => {
+        doc.text(info, 25, yPosition);
+        yPosition += 6;
       });
 
-      // Gerar PDF
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20px',
-          right: '20px',
-          bottom: '20px',
-          left: '20px'
-        }
+      yPosition += 10;
+
+      // Dados do Cliente
+      doc.setFontSize(14);
+      doc.setTextColor(44, 90, 160);
+      doc.text('Dados do Cliente', 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+
+      const clienteInfo = [
+        `Nome: ${cliente.nome || 'Não informado'}`,
+        `CPF: ${cliente.cpf || 'Não informado'}`,
+        `Telefone: ${cliente.telefone || 'Não informado'}`,
+        `Email: ${cliente.email || 'Não informado'}`,
+        `Endereço: ${this.formatClienteEndereco(cliente)}`
+      ];
+
+      clienteInfo.forEach(info => {
+        doc.text(info, 25, yPosition);
+        yPosition += 6;
       });
 
-      return pdfBuffer;
+      yPosition += 10;
+
+      // Detalhes do Serviço
+      doc.setFontSize(14);
+      doc.setTextColor(44, 90, 160);
+      doc.text('Detalhes do Serviço', 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Modelo do Tênis: ${pedido.modeloTenis || 'Não informado'}`, 25, yPosition);
+      yPosition += 10;
+
+      // Serviços
+      doc.text('Serviços Solicitados:', 25, yPosition);
+      yPosition += 8;
+
+      if (pedido.servicos && pedido.servicos.length > 0) {
+        pedido.servicos.forEach(servico => {
+          doc.text(`• ${servico.nome || 'Serviço'} - ${this.formatCurrency(servico.preco)}`, 30, yPosition);
+          if (servico.descricao) {
+            yPosition += 5;
+            doc.setFontSize(9);
+            doc.text(`  ${servico.descricao}`, 35, yPosition);
+            doc.setFontSize(10);
+          }
+          yPosition += 6;
+        });
+      } else {
+        doc.text(`• ${pedido.tipoServico || 'Serviço não especificado'} - ${this.formatCurrency(pedido.preco)}`, 30, yPosition);
+        yPosition += 6;
+      }
+
+      yPosition += 5;
+
+      // Total
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Total: ${this.formatCurrency(pedido.precoTotal || pedido.preco)}`, pageWidth - 60, yPosition, { align: 'right' });
+      yPosition += 15;
+
+      // Observações
+      if (pedido.observacoes || pedido.descricaoServicos) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(44, 90, 160);
+        doc.text('Observações:', 20, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        
+        const observacoes = pedido.observacoes || pedido.descricaoServicos;
+        const splitText = doc.splitTextToSize(observacoes, pageWidth - 40);
+        doc.text(splitText, 25, yPosition);
+        yPosition += splitText.length * 5 + 10;
+      }
+
+      // Histórico de Status (se há espaço)
+      if (pedido.statusHistory && pedido.statusHistory.length > 0 && yPosition < pageHeight - 60) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(44, 90, 160);
+        doc.text('Histórico de Status:', 20, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+
+        pedido.statusHistory.slice(0, 5).forEach(item => { // Mostrar apenas os 5 mais recentes
+          const statusText = `${item.status} - ${this.formatDate(item.date)} ${item.time || ''}`;
+          doc.text(statusText, 25, yPosition);
+          yPosition += 5;
+        });
+      }
+
+      // Rodapé
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Documento gerado em ${this.formatDate(new Date().toISOString())}`, 20, pageHeight - 20);
+      doc.text('Shoe Repair - Sistema de Gerenciamento', pageWidth - 20, pageHeight - 20, { align: 'right' });
+
+      // Retornar buffer do PDF
+      return Buffer.from(doc.output('arraybuffer'));
 
     } catch (error) {
       console.error('Erro ao gerar PDF do pedido:', error);
       throw error;
-    } finally {
-      if (browser) {
-        await browser.close();
-      }
     }
   }
 
