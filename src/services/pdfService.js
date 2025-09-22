@@ -1,5 +1,4 @@
 const { jsPDF } = require('jspdf');
-require('jspdf-autotable');
 const pedidoService = require('./pedidoService');
 const clienteService = require('./clienteService');
 
@@ -36,52 +35,14 @@ class PdfService {
         throw new Error(`Cliente com ID ${pedido.clienteId} não encontrado`);
       }
 
-      // Criar documento PDF com configurações aprimoradas
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-      
+      // Criar documento PDF
+      const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
       let yPosition = 20;
 
-      // Configurar fonte padrão com suporte a caracteres especiais
+      // Configurar fonte padrão
       doc.setFont('helvetica', 'normal');
-      
-      // Função melhorada para texto com caracteres especiais
-      const safeText = (text) => {
-        if (!text) return '';
-        return text
-          .replace(/ç/g, 'c').replace(/Ç/g, 'C')
-          .replace(/ã/g, 'a').replace(/Ã/g, 'A')
-          .replace(/á/g, 'a').replace(/Á/g, 'A')
-          .replace(/à/g, 'a').replace(/À/g, 'A')
-          .replace(/â/g, 'a').replace(/Â/g, 'A')
-          .replace(/ä/g, 'a').replace(/Ä/g, 'A')
-          .replace(/é/g, 'e').replace(/É/g, 'E')
-          .replace(/è/g, 'e').replace(/È/g, 'E')
-          .replace(/ê/g, 'e').replace(/Ê/g, 'E')
-          .replace(/ë/g, 'e').replace(/Ë/g, 'E')
-          .replace(/í/g, 'i').replace(/Í/g, 'I')
-          .replace(/ì/g, 'i').replace(/Ì/g, 'I')
-          .replace(/î/g, 'i').replace(/Î/g, 'I')
-          .replace(/ï/g, 'i').replace(/Ï/g, 'I')
-          .replace(/ó/g, 'o').replace(/Ó/g, 'O')
-          .replace(/ò/g, 'o').replace(/Ò/g, 'O')
-          .replace(/ô/g, 'o').replace(/Ô/g, 'O')
-          .replace(/õ/g, 'o').replace(/Õ/g, 'O')
-          .replace(/ö/g, 'o').replace(/Ö/g, 'O')
-          .replace(/ú/g, 'u').replace(/Ú/g, 'U')
-          .replace(/ù/g, 'u').replace(/Ù/g, 'U')
-          .replace(/û/g, 'u').replace(/Û/g, 'U')
-          .replace(/ü/g, 'u').replace(/Ü/g, 'U')
-          .replace(/ñ/g, 'n').replace(/Ñ/g, 'N')
-          .replace(/º/g, 'o').replace(/ª/g, 'a')
-          .replace(/°/g, 'o');
-      };
 
       // Cabeçalho
       doc.setFontSize(20);
@@ -114,8 +75,8 @@ class PdfService {
         `No do Pedido: ${pedido.id}`,
         `Data de Criacao: ${this.formatDate(pedido.createdAt || pedido.dataCriacao)}`,
         `Data Prevista: ${this.formatDate(pedido.dataPrevistaEntrega)}`,
-        `Status Atual: ${safeText(pedido.status || 'Nao informado')}`,
-        `Departamento: ${safeText(pedido.departamento || 'Nao informado')}`
+        `Status Atual: ${pedido.status || 'Nao informado'}`,
+        `Departamento: ${pedido.departamento || 'Nao informado'}`
       ];
 
       pedidoInfo.forEach(info => {
@@ -135,11 +96,11 @@ class PdfService {
       doc.setTextColor(0, 0, 0);
 
       const clienteInfo = [
-        `Nome: ${safeText(cliente.nome || 'Nao informado')}`,
+        `Nome: ${cliente.nome || 'Nao informado'}`,
         `CPF: ${cliente.cpf || 'Nao informado'}`,
         `Telefone: ${cliente.telefone || 'Nao informado'}`,
         `Email: ${cliente.email || 'Nao informado'}`,
-        `Endereco: ${safeText(this.formatClienteEndereco(cliente))}`
+        `Endereço: ${this.formatClienteEndereco(cliente)}`
       ];
 
       clienteInfo.forEach(info => {
@@ -152,12 +113,12 @@ class PdfService {
       // Detalhes do Serviço
       doc.setFontSize(14);
       doc.setTextColor(44, 90, 160);
-      doc.text('Detalhes do Servico', 20, yPosition);
+      doc.text('Detalhes do Serviço', 20, yPosition);
       yPosition += 10;
 
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
-      doc.text(`Modelo do Tenis: ${safeText(pedido.modeloTenis || 'Nao informado')}`, 25, yPosition);
+      doc.text(`Modelo do Tenis: ${pedido.modeloTenis || 'Nao informado'}`, 25, yPosition);
       yPosition += 10;
 
       // Serviços
@@ -166,17 +127,17 @@ class PdfService {
 
       if (pedido.servicos && pedido.servicos.length > 0) {
         pedido.servicos.forEach(servico => {
-          doc.text(`• ${safeText(servico.nome || 'Servico')} - ${this.formatCurrency(servico.preco)}`, 30, yPosition);
+          doc.text(`• ${servico.nome || 'Servico'} - ${this.formatCurrency(servico.preco)}`, 30, yPosition);
           if (servico.descricao) {
             yPosition += 5;
             doc.setFontSize(9);
-            doc.text(`  ${safeText(servico.descricao)}`, 35, yPosition);
+            doc.text(`  ${servico.descricao}`, 35, yPosition);
             doc.setFontSize(10);
           }
           yPosition += 6;
         });
       } else {
-        doc.text(`• ${safeText(pedido.tipoServico || 'Servico nao especificado')} - ${this.formatCurrency(pedido.preco)}`, 30, yPosition);
+        doc.text(`• ${pedido.tipoServico || 'Servico não especificado'} - ${this.formatCurrency(pedido.preco)}`, 30, yPosition);
         yPosition += 6;
       }
 
@@ -200,7 +161,7 @@ class PdfService {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0, 0, 0);
         
-        const observacoes = safeText(pedido.observacoes || pedido.descricaoServicos);
+        const observacoes = pedido.observacoes || pedido.descricaoServicos;
         const splitText = doc.splitTextToSize(observacoes, pageWidth - 40);
         doc.text(splitText, 25, yPosition);
         yPosition += splitText.length * 5 + 10;
@@ -219,7 +180,7 @@ class PdfService {
         doc.setTextColor(0, 0, 0);
 
         pedido.statusHistory.slice(0, 5).forEach(item => { // Mostrar apenas os 5 mais recentes
-          const statusText = `${safeText(item.status)} - ${this.formatDate(item.date)} ${item.time || ''}`;
+          const statusText = `${item.status} - ${this.formatDate(item.date)} ${item.time || ''}`;
           doc.text(statusText, 25, yPosition);
           yPosition += 5;
         });
@@ -245,13 +206,13 @@ class PdfService {
     const enderecoParts = [];
     
     if (cliente.logradouro) enderecoParts.push(cliente.logradouro);
-    if (cliente.numero) enderecoParts.push(`no ${cliente.numero}`);
+    if (cliente.numero) enderecoParts.push(`nº ${cliente.numero}`);
     if (cliente.bairro) enderecoParts.push(cliente.bairro);
     if (cliente.cidade) enderecoParts.push(cliente.cidade);
     if (cliente.estado) enderecoParts.push(cliente.estado);
     if (cliente.cep) enderecoParts.push(`CEP: ${cliente.cep}`);
     
-    return enderecoParts.length > 0 ? enderecoParts.join(', ') : 'Nao informado';
+    return enderecoParts.length > 0 ? enderecoParts.join(', ') : 'Não informado';
   }
 }
 
