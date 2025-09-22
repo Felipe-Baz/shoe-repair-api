@@ -300,9 +300,9 @@ exports.updatePedidoStatus = async (req, res) => {
 // POST /pedidos/document/pdf - Gerar PDF do pedido
 exports.generatePedidoPdf = async (req, res) => {
   try {
-    const { pedidoId } = req.body;
+    const { orderId } = req.body;
     
-    if (!pedidoId) {
+    if (!orderId) {
       return res.status(400).json({
         success: false,
         message: 'ID do pedido é obrigatório'
@@ -318,11 +318,11 @@ exports.generatePedidoPdf = async (req, res) => {
     }
 
     // Gerar PDF
-    const pdfBuffer = await pdfService.generatePedidoPdf(pedidoId);
+    const pdfBuffer = await pdfService.generatePedidoPdf(orderId);
 
     // Definir headers para download do PDF
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="pedido-${pedidoId}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="pedido-${orderId}.pdf"`);
     res.setHeader('Content-Length', pdfBuffer.length);
 
     // Enviar o PDF como blob
