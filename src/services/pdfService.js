@@ -2,6 +2,7 @@ const { jsPDF } = require('jspdf');
 const pedidoService = require('./pedidoService');
 const clienteService = require('./clienteService');
 const AWS = require('aws-sdk');
+const StringSanitizer = require('../utils/stringSanitizer');
 
 // Configurar S3
 const s3 = new AWS.S3();
@@ -56,6 +57,7 @@ class PdfService {
       throw error;
     }
   }
+  
   
   // Função para formatar data para exibição
   formatDate(dateString) {
@@ -127,34 +129,33 @@ class PdfService {
       console.log('pedidoId:', pedidoId);
       
       // Buscar dados do pedido
-      const pedido = await pedidoService.getPedido(pedidoId);
-      console.log('Dados do pedido retornados:', JSON.stringify(pedido, null, 2));
+      const pedidoRaw = await pedidoService.getPedido(pedidoId);
+      console.log('Dados do pedido retornados (antes da sanitização):', JSON.stringify(pedidoRaw, null, 2));
       
-      if (!pedido) {
+      if (!pedidoRaw) {
         throw new Error(`Pedido com ID ${pedidoId} não encontrado`);
       }
 
+      // Sanitizar dados do pedido
+      const pedido = StringSanitizer.sanitizeObject(pedidoRaw);
+      console.log('Dados do pedido sanitizados:', JSON.stringify(pedido, null, 2));
+
       // Buscar dados do cliente
-      const cliente = await clienteService.getCliente(pedido.clienteId);
-      console.log('Dados do cliente retornados:', JSON.stringify(cliente, null, 2));
+      const clienteRaw = await clienteService.getCliente(pedido.clienteId);
+      console.log('Dados do cliente retornados (antes da sanitização):', JSON.stringify(clienteRaw, null, 2));
       
-      if (!cliente) {
+      if (!clienteRaw) {
         throw new Error(`Cliente com ID ${pedido.clienteId} não encontrado`);
       }
+
+      // Sanitizar dados do cliente
+      const cliente = StringSanitizer.sanitizeObject(clienteRaw);
+      console.log('Dados do cliente sanitizados:', JSON.stringify(cliente, null, 2));
 
       // Criar documento PDF
       console.log('Criando documento PDF...');
       const doc = new jsPDF();
       console.log('Documento PDF criado com sucesso');
-      
-      // Testar se conseguimos adicionar pelo menos um texto básico
-      try {
-        doc.text('Teste básico', 20, 20);
-        console.log('Texto básico adicionado com sucesso');
-      } catch (textError) {
-        console.error('ERRO: Não conseguiu adicionar texto básico:', textError);
-        throw new Error('Erro na biblioteca jsPDF: ' + textError.message);
-      }
       
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
@@ -275,17 +276,22 @@ class PdfService {
 
       if (pedido.servicos && pedido.servicos.length > 0) {
         pedido.servicos.forEach(servico => {
-          doc.text(`• ${servico.nome || 'Servico'} - ${this.formatCurrency(servico.preco)}`, 30, yPosition);
-          if (servico.descricao) {
+          // Sanitizar nome e descrição do serviço antes de usar
+          const nomeServico = StringSanitizer.sanitizeString(servico.nome || 'Servico');
+          const descricaoServico = servico.descricao ? StringSanitizer.sanitizeString(servico.descricao) : null;
+          
+          doc.text(`• ${nomeServico} - ${this.formatCurrency(servico.preco)}`, 30, yPosition);
+          if (descricaoServico) {
             yPosition += 5;
             doc.setFontSize(9);
-            doc.text(`  ${servico.descricao}`, 35, yPosition);
+            doc.text(`  ${descricaoServico}`, 35, yPosition);
             doc.setFontSize(10);
           }
           yPosition += 6;
         });
       } else {
-        doc.text(`• ${pedido.tipoServico || 'Servico não especificado'} - ${this.formatCurrency(pedido.preco)}`, 30, yPosition);
+        const tipoServico = StringSanitizer.sanitizeString(pedido.tipoServico || 'Servico não especificado');
+        doc.text(`• ${tipoServico} - ${this.formatCurrency(pedido.preco)}`, 30, yPosition);
         yPosition += 6;
       }
 
@@ -315,7 +321,8 @@ class PdfService {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0, 0, 0);
         
-        const observacoes = pedido.observacoes || pedido.descricaoServicos;
+        // Sanitizar observações antes de usar
+        const observacoes = StringSanitizer.sanitizeString(pedido.observacoes || pedido.descricaoServicos);
         const splitText = doc.splitTextToSize(observacoes, pageWidth - 40);
         doc.text(splitText, 25, yPosition);
         yPosition += splitText.length * 5 + 10;
