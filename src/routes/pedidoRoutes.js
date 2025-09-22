@@ -13,5 +13,7 @@ router.put('/:id', pedidoController.updatePedido);
 router.delete('/:id', pedidoController.deletePedido);
 // Nova rota para atualizar apenas o status do pedido
 router.patch('/:id/status', pedidoController.updatePedidoStatus);
+// Nova rota para gerar PDF do pedido
+router.post('/document/pdf', pedidoController.generatePedidoPdf);
 
 module.exports = router;

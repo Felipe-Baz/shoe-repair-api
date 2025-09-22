@@ -1,5 +1,6 @@
 const pedidoService = require('../services/pedidoService');
 const { enviarStatusPedido } = require('../services/whatsappService');
+const pdfService = require('../services/pdfService');
 
 exports.listPedidosStatus = async (req, res) => {
   try {
@@ -292,6 +293,56 @@ exports.updatePedidoStatus = async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: err.message 
+    });
+  }
+};
+
+// POST /pedidos/document/pdf - Gerar PDF do pedido
+exports.generatePedidoPdf = async (req, res) => {
+  try {
+    const { pedidoId } = req.body;
+    
+    if (!pedidoId) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID do pedido é obrigatório'
+      });
+    }
+
+    // Verificar se o usuário tem permissão (autenticado)
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Usuário não autenticado'
+      });
+    }
+
+    // Gerar PDF
+    const pdfBuffer = await pdfService.generatePedidoPdf(pedidoId);
+
+    // Definir headers para download do PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="pedido-${pedidoId}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    // Enviar o PDF como blob
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('Erro ao gerar PDF do pedido:', error);
+    
+    // Verificar se é erro de pedido não encontrado
+    if (error.message.includes('não encontrado')) {
+      return res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor ao gerar PDF',
+      error: error.message
     });
   }
 };
