@@ -76,10 +76,7 @@ class PdfService {
   formatCurrency(value) {
     try {
       if (!value || isNaN(value)) return 'R$ 0,00';
-      return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      }).format(value);
+      return `R$ ${Number(value).toFixed(2).replace('.', ',')}`;
     } catch (error) {
       console.error('Erro ao formatar valor:', error);
       return 'R$ 0,00';
@@ -247,7 +244,7 @@ class PdfService {
         `CPF: ${cliente.cpf || 'Nao informado'}`,
         `Telefone: ${cliente.telefone || 'Nao informado'}`,
         `Email: ${cliente.email || 'Nao informado'}`,
-        `Endereço: ${this.formatClienteEndereco(cliente)}`
+        `Endereco: ${this.formatClienteEndereco(cliente)}`
       ];
       
       console.log('Informações do cliente formatadas:', clienteInfo);
@@ -262,7 +259,7 @@ class PdfService {
       // Detalhes do Serviço
       doc.setFontSize(14);
       doc.setTextColor(44, 90, 160);
-      doc.text('Detalhes do Serviço', 20, yPosition);
+      doc.text('Detalhes do Servico', 20, yPosition);
       yPosition += 10;
 
       doc.setFontSize(10);
@@ -280,7 +277,7 @@ class PdfService {
           const nomeServico = StringSanitizer.sanitizeString(servico.nome || 'Servico');
           const descricaoServico = servico.descricao ? StringSanitizer.sanitizeString(servico.descricao) : null;
           
-          doc.text(`• ${nomeServico} - ${this.formatCurrency(servico.preco)}`, 30, yPosition);
+          doc.text(`- ${nomeServico} - ${this.formatCurrency(servico.preco)}`, 30, yPosition);
           if (descricaoServico) {
             yPosition += 5;
             doc.setFontSize(9);
@@ -291,7 +288,7 @@ class PdfService {
         });
       } else {
         const tipoServico = StringSanitizer.sanitizeString(pedido.tipoServico || 'Servico não especificado');
-        doc.text(`• ${tipoServico} - ${this.formatCurrency(pedido.preco)}`, 30, yPosition);
+        doc.text(`- ${tipoServico} - ${this.formatCurrency(pedido.preco)}`, 30, yPosition);
         yPosition += 6;
       }
 
