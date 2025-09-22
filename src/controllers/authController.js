@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
-const JWT_EXPIRES = '15m';
+const JWT_EXPIRES = '480m';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || 'refreshchangeme';
 const REFRESH_EXPIRES = '7d';
 
