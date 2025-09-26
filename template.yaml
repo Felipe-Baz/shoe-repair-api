@@ -8,16 +8,8 @@ Parameters:
     Type: String
     Description: S3 key for Lambda code zip
 Resources:
-  # CloudWatch Log Group para a Lambda
-  ShoeRepairApiLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub '/aws/lambda/${ShoeRepairApiFunction}'
-      RetentionInDays: 14
-
   ShoeRepairApiFunction:
     Type: AWS::Lambda::Function
-    DependsOn: ShoeRepairApiLogGroup
     Properties:
       FunctionName: ShoeRepairApiFunction
       Handler: handler.handler
