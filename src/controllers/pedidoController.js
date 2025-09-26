@@ -185,6 +185,225 @@ exports.updatePedido = async (req, res) => {
   }
 };
 
+exports.patchPedido = async (req, res) => {
+  try {
+    console.log('[PedidoController] Iniciando PATCH do pedido:', {
+      pedidoId: req.params.id,
+      updates: req.body,
+      user: req.user
+    });
+
+    const { role, sub: userId, email: userEmail } = req.user || {};
+    const pedidoId = req.params.id;
+    const updates = req.body;
+
+    // Validação básica
+    if (!pedidoId) {
+      console.log('[PedidoController] ID do pedido não fornecido');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'ID do pedido é obrigatório' 
+      });
+    }
+
+    if (!updates || Object.keys(updates).length === 0) {
+      console.log('[PedidoController] Nenhum campo para atualizar fornecido');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Pelo menos um campo deve ser fornecido para atualização' 
+      });
+    }
+
+    // Buscar pedido atual para validações
+    console.log('[PedidoController] Buscando pedido atual...');
+    const pedidoAtual = await pedidoService.getPedido(pedidoId);
+    if (!pedidoAtual) {
+      console.log('[PedidoController] Pedido não encontrado:', pedidoId);
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Pedido não encontrado' 
+      });
+    }
+
+    console.log('[PedidoController] Pedido encontrado:', pedidoAtual.id);
+
+    // Campos permitidos para atualização
+    const camposPermitidos = [
+      'modeloTenis', 'servicos', 'fotos', 'precoTotal', 'dataPrevistaEntrega',
+      'departamento', 'observacoes', 'status', 'tipoServico', 'descricaoServicos', 
+      'preco', 'statusHistory'
+    ];
+
+    // Filtrar apenas campos permitidos
+    const updatesPermitidos = {};
+    const camposRejeitados = [];
+
+    Object.keys(updates).forEach(campo => {
+      if (camposPermitidos.includes(campo)) {
+        updatesPermitidos[campo] = updates[campo];
+      } else if (campo !== 'id' && campo !== 'clienteId' && campo !== 'dataCriacao' && campo !== 'createdAt') {
+        camposRejeitados.push(campo);
+      }
+    });
+
+    if (camposRejeitados.length > 0) {
+      console.log('[PedidoController] Campos rejeitados:', camposRejeitados);
+      return res.status(400).json({ 
+        success: false, 
+        error: `Campos não permitidos para atualização: ${camposRejeitados.join(', ')}`,
+        camposPermitidos: camposPermitidos
+      });
+    }
+
+    console.log('[PedidoController] Campos permitidos para atualização:', Object.keys(updatesPermitidos));
+
+    // Validações específicas por campo
+    if (updatesPermitidos.servicos) {
+      if (!Array.isArray(updatesPermitidos.servicos)) {
+        console.log('[PedidoController] Serviços devem ser um array');
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Serviços devem ser um array' 
+        });
+      }
+
+      // Validar estrutura dos serviços
+      for (const servico of updatesPermitidos.servicos) {
+        if (!servico.id || !servico.nome || typeof servico.preco !== 'number') {
+          console.log('[PedidoController] Estrutura inválida de serviço:', servico);
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Cada serviço deve ter: id, nome e preco (número)' 
+          });
+        }
+      }
+    }
+
+    if (updatesPermitidos.fotos && !Array.isArray(updatesPermitidos.fotos)) {
+      console.log('[PedidoController] Fotos devem ser um array');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Fotos devem ser um array' 
+      });
+    }
+
+    if (updatesPermitidos.precoTotal && typeof updatesPermitidos.precoTotal !== 'number') {
+      console.log('[PedidoController] PrecoTotal deve ser um número');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'PrecoTotal deve ser um número' 
+      });
+    }
+
+    // Validação de permissões para alteração de status
+    if (updatesPermitidos.status) {
+      const canUpdateStatus = (userRole, newStatus) => {
+        switch (userRole?.toLowerCase()) {
+          case 'admin':
+            return true; // Admin pode alterar qualquer status
+          case 'lavagem':
+            return newStatus.startsWith('Lavagem - ');
+          case 'pintura':
+            return newStatus.startsWith('Pintura - ');
+          case 'atendimento':
+            return newStatus.startsWith('Atendimento - ');
+          default:
+            return false;
+        }
+      };
+
+      if (!canUpdateStatus(role, updatesPermitidos.status)) {
+        console.log('[PedidoController] Usuário sem permissão para alterar status:', {
+          userRole: role,
+          newStatus: updatesPermitidos.status
+        });
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Usuário não tem permissão para alterar para este status' 
+        });
+      }
+
+      // Se o status está sendo alterado, adicionar ao histórico
+      if (updatesPermitidos.status !== pedidoAtual.status) {
+        const novoHistorico = {
+          status: updatesPermitidos.status,
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toTimeString().split(' ')[0].substring(0, 5),
+          userId: userId,
+          userName: userEmail || 'Sistema',
+          timestamp: new Date().toISOString()
+        };
+
+        updatesPermitidos.statusHistory = [
+          ...(pedidoAtual.statusHistory || []),
+          novoHistorico
+        ];
+
+        console.log('[PedidoController] Adicionando entrada no histórico de status:', novoHistorico);
+      }
+    }
+
+    // Adicionar updatedAt automaticamente
+    updatesPermitidos.updatedAt = new Date().toISOString();
+
+    console.log('[PedidoController] Executando atualização no banco:', updatesPermitidos);
+
+    // Executar atualização
+    const pedidoAtualizado = await pedidoService.updatePedido(pedidoId, updatesPermitidos);
+
+    console.log('[PedidoController] Pedido atualizado com sucesso:', {
+      id: pedidoAtualizado.id,
+      camposAtualizados: Object.keys(updatesPermitidos)
+    });
+
+    // Se o status foi alterado, enviar notificação via WhatsApp
+    if (updatesPermitidos.status && updatesPermitidos.status !== pedidoAtual.status) {
+      try {
+        console.log('[PedidoController] Enviando notificação WhatsApp para mudança de status...');
+        
+        // Buscar dados do cliente se necessário
+        const { nomeCliente, telefoneCliente, modeloTenis, descricaoServicos } = pedidoAtualizado;
+        
+        if (telefoneCliente && nomeCliente) {
+          await enviarStatusPedido(
+            telefoneCliente, 
+            nomeCliente, 
+            updatesPermitidos.status, 
+            descricaoServicos || 'Serviços diversos', 
+            modeloTenis || 'Tênis'
+          );
+          console.log('[PedidoController] Notificação WhatsApp enviada com sucesso');
+        } else {
+          console.log('[PedidoController] Dados insuficientes para envio WhatsApp:', {
+            telefone: !!telefoneCliente,
+            nome: !!nomeCliente
+          });
+        }
+      } catch (whatsappError) {
+        console.error('[PedidoController] Erro ao enviar WhatsApp:', whatsappError);
+        // Não falhar a operação por erro no WhatsApp
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: pedidoAtualizado,
+      message: `Pedido atualizado com sucesso. Campos alterados: ${Object.keys(updatesPermitidos).filter(k => k !== 'updatedAt').join(', ')}`
+    });
+
+  } catch (err) {
+    console.error('[PedidoController] Erro no PATCH do pedido:', {
+      error: err.message,
+      stack: err.stack,
+      pedidoId: req.params.id
+    });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+};
+
 exports.deletePedido = async (req, res) => {
   try {
     const deletado = await pedidoService.deletePedido(req.params.id);

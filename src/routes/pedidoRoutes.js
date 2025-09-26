@@ -10,6 +10,8 @@ router.get('/kanban/status', pedidoController.listPedidosStatus);
 router.get('/:id', pedidoController.getPedido);
 router.post('/', pedidoController.createPedido);
 router.put('/:id', pedidoController.updatePedido);
+// Nova rota para atualização parcial do pedido (PATCH)
+router.patch('/:id', pedidoController.patchPedido);
 router.delete('/:id', pedidoController.deletePedido);
 // Nova rota para atualizar apenas o status do pedido
 router.patch('/:id/status', pedidoController.updatePedidoStatus);
