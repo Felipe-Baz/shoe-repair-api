@@ -45,7 +45,7 @@ exports.listPedidosStatus = async (req, res) => {
       serviceType: pedido.tipoServico || pedido.serviceType,
       description: pedido.descricaoServicos || pedido.description,
       price: pedido.preco || pedido.price || pedido.precoTotal,
-      servicos: pedido.servicos.map(servico => servico.nome).join(', '),
+      servicos: pedido.servicos ? pedido.servicos.map(servico => servico.nome).join(', ') : '',
       status: pedido.status,
       createdDate: pedido.dataCriacao || pedido.createdDate,
       expectedDate: pedido.dataPrevistaEntrega || pedido.expectedDate,
@@ -63,10 +63,20 @@ exports.listPedidosStatus = async (req, res) => {
       tipoServico: pedido.tipoServico,
       descricaoServicos: pedido.descricaoServicos,
       preco: pedido.preco,
+      precoTotal: pedido.precoTotal || 0,
+      valorSinal: pedido.valorSinal || 0,
+      valorRestante: pedido.valorRestante || 0,
       dataPrevistaEntrega: pedido.dataPrevistaEntrega,
       dataCriacao: pedido.dataCriacao,
       fotos: pedido.fotos || [],
-      observacoes: pedido.observacoes
+      observacoes: pedido.observacoes,
+      garantia: pedido.garantia || {
+        ativa: false,
+        preco: 0,
+        duracao: '',
+        data: ''
+      },
+      acessorios: pedido.acessorios || []
     }));
 
     res.status(200).json({
