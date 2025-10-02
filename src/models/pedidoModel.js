@@ -2,6 +2,7 @@
 module.exports = {
   id: String,
   clienteId: String,
+  clientName: String, // Nome do cliente
   modeloTenis: String,
   servicos: [{ // Nova estrutura de serviços
     id: String,
@@ -10,15 +11,24 @@ module.exports = {
     descricao: String
   }],
   fotos: [String], // URLs do S3
-  precoTotal: Number, // Novo campo
+  precoTotal: Number, // Preço total dos serviços
+  valorSinal: Number, // Valor do sinal pago
+  valorRestante: Number, // Valor restante a ser pago
   dataPrevistaEntrega: String, // ISO date
-  departamento: String, // Novo campo
-  observacoes: String, // Novo campo
+  departamento: String, // Departamento responsável
+  observacoes: String, // Observações gerais
+  garantia: { // Informações da garantia
+    ativa: Boolean,
+    preco: Number,
+    duracao: String,
+    data: String
+  },
+  acessorios: [String], // Lista de acessórios
   status: String, // Enum
   dataCriacao: String, // ISO date
   createdAt: String, // ISO date
   updatedAt: String, // ISO date
-  statusHistory: [{ // Novo campo para histórico
+  statusHistory: [{ // Histórico de mudanças de status
     status: String,
     date: String,
     time: String,

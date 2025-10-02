@@ -105,21 +105,26 @@ exports.createPedido = async (req, res) => {
   try {
     const { 
       clienteId, 
+      clientName,
       modeloTenis, 
       servicos, 
       fotos, 
-      precoTotal, 
+      precoTotal,
+      valorSinal,
+      valorRestante, 
       dataPrevistaEntrega, 
       departamento, 
       observacoes,
+      garantia,
+      acessorios,
       status
     } = req.body;
 
     // Validação básica
-    if (!clienteId || !modeloTenis || !servicos || !Array.isArray(servicos) || servicos.length === 0) {
+    if (!clienteId || !clientName || !modeloTenis || !servicos || !Array.isArray(servicos) || servicos.length === 0) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Campos obrigatórios: clienteId, modeloTenis e servicos (array não vazio)' 
+        error: 'Campos obrigatórios: clienteId, clientName, modeloTenis e servicos (array não vazio)' 
       });
     }
 
@@ -133,25 +138,43 @@ exports.createPedido = async (req, res) => {
       }
     }
 
+    // Validar estrutura da garantia se fornecida
+    if (garantia && (typeof garantia.ativa !== 'boolean' || typeof garantia.preco !== 'number')) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Garantia deve ter: ativa (boolean) e preco (número)' 
+      });
+    }
+
     const { role, sub: userId, email: userEmail } = req.user || {};
 
     // Estruturar dados do pedido
     const dadosPedido = {
       clienteId,
+      clientName,
       modeloTenis,
       servicos,
       fotos: fotos || [],
       precoTotal: precoTotal || servicos.reduce((total, servico) => total + servico.preco, 0),
+      valorSinal: valorSinal || 0,
+      valorRestante: valorRestante || (precoTotal - (valorSinal || 0)),
       dataPrevistaEntrega,
       departamento: departamento || 'Atendimento',
       observacoes: observacoes || '',
-      status: status || 'Atendimento - Orçado',
+      garantia: garantia || {
+        ativa: false,
+        preco: 0,
+        duracao: '',
+        data: ''
+      },
+      acessorios: acessorios || [],
+      status: status || 'Atendimento - Aguardando Aprovação',
       dataCriacao: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       statusHistory: [
         {
-          status: status || 'Atendimento - Orçado',
+          status: status || 'Atendimento - Aguardando Aprovação',
           date: new Date().toISOString().split('T')[0],
           time: new Date().toTimeString().split(' ')[0].substring(0, 5),
           userId: userId || 'sistema',

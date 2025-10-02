@@ -21,13 +21,23 @@ exports.createPedido = async (pedido) => {
   const novoPedido = { 
     id: uuidv4(),
     clienteId: pedido.clienteId,
+    clientName: pedido.clientName,
     modeloTenis: pedido.modeloTenis,
     servicos: pedido.servicos || [],
     fotos: pedido.fotos || [],
     precoTotal: pedido.precoTotal,
+    valorSinal: pedido.valorSinal || 0,
+    valorRestante: pedido.valorRestante || 0,
     dataPrevistaEntrega: pedido.dataPrevistaEntrega,
     departamento: pedido.departamento || 'Atendimento',
     observacoes: pedido.observacoes || '',
+    garantia: pedido.garantia || {
+      ativa: false,
+      preco: 0,
+      duracao: '',
+      data: ''
+    },
+    acessorios: pedido.acessorios || [],
     status: pedido.status || 'Atendimento - Aguardando Aprovação',
     dataCriacao: pedido.dataCriacao || new Date().toISOString(),
     createdAt: pedido.createdAt || new Date().toISOString(),
