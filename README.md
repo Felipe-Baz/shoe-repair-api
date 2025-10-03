@@ -1,14 +1,72 @@
-# Shoe Repair API
+# 👟 Shoe Repair API - Documentação Completa
 
-API serverless para cadastro de clientes, pedidos, upload de fotos, autenticação JWT e integração com DynamoDB, pronta para deploy na AWS Lambda via CloudFormation.
+Sistema completo de gestão para reparos de calçados, desenvolvido em Node.js com AWS.
 
-## Funcionalidades
-- CRUD de Clientes
-- CRUD de Pedidos
-- Upload de fotos para S3 (com organização por usuário/pedido)
-- Autenticação JWT (login, cadastro, refresh token)
-- Persistência em DynamoDB
-- Deploy automatizado via GitHub Actions e CloudFormation
+## 📚 Índice da Documentação
+
+### 📖 **[Documentação Principal da API](docs/API-Documentation.md)**
+Guia completo com todos os endpoints, exemplos e estruturas de dados.
+
+### 🔐 **[Sistema de Autenticação](docs/Authentication.md)**
+JWT, roles, permissões e middleware de segurança.
+
+### 👟 **[Sistema de Pedidos](docs/Orders-System.md)**  
+Gerenciamento de pedidos, status, histórico e geração de PDFs.
+
+### 📤 **[Sistema de Upload](docs/Upload-System.md)**
+Upload de fotos, integração S3 e validações de arquivos.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Instalação Rápida:
+```bash
+git clone https://github.com/Felipe-Baz/shoe-repair-api
+cd shoe-repair-api
+npm install
+cp .env.example .env  # Configure suas variáveis
+npm start
+```
+
+### 2. Teste Básico:
+```bash
+# Login
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@loja.com","password":"123456"}'
+
+# Criar Pedido  
+curl -X POST http://localhost:3000/pedidos \
+  -H "Authorization: Bearer <seu-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"clienteId":"123","clientName":"João","modeloTenis":"Nike",...}'
+```
+
+---
+
+## 🏗️ Arquitetura do Sistema
+
+### Tecnologias Utilizadas:
+- **Runtime:** Node.js 16+
+- **Framework:** Express.js
+- **Database:** AWS DynamoDB
+- **Storage:** AWS S3
+- **Authentication:** JWT
+- **Deploy:** AWS Lambda (Serverless)
+
+---
+
+## 🔧 Funcionalidades Principais
+
+✅ **Sistema de Autenticação** - JWT com refresh tokens e controle por roles  
+✅ **Gerenciamento de Pedidos** - CRUD completo com IDs únicos e histórico de status  
+✅ **Upload de Fotos** - Integração S3 com validação e organização automática  
+✅ **Sistema de Status** - Fluxo completo: Atendimento → Lavagem → Pintura → Finalizado  
+✅ **Controle de Permissões** - Filtros automáticos por role (admin, atendimento, lavagem, pintura)  
+✅ **Geração de PDFs** - Documentos automáticos dos pedidos  
+✅ **Notificações WhatsApp** - Atualizações automáticas de status  
+✅ **Dashboard Analytics** - Métricas e indicadores de performance
 
 ## Estrutura de Pastas
 ```
@@ -138,6 +196,26 @@ curl -X POST http://localhost:3000/upload/fotos \
 - O template CloudFormation já cria todas as tabelas DynamoDB, bucket S3 e API Gateway integrado ao Lambda.
 - O output do stack mostrará a URL da API após o deploy.
 - As secrets JWT podem ser alteradas no Parameter Store da AWS para maior segurança.
+
+---
+
+## 📚 Documentação Especializada
+
+### Sistemas Principais
+- **[📋 API Completa](docs/API-Documentation.md)** - Referência completa de todos endpoints
+- **[🔐 Autenticação](docs/Authentication.md)** - Sistema JWT e controle de acesso
+- **[📦 Pedidos](docs/Orders-System.md)** - Gestão completa de pedidos e workflow
+- **[📤 Upload](docs/Upload-System.md)** - Sistema de upload S3 e gestão de arquivos
+- **[👥 Clientes](docs/Clients-System.md)** - Gestão completa de clientes e histórico
+- **[📊 Dashboard](docs/Dashboard-System.md)** - Métricas, relatórios e analytics
+
+### Sistemas Complementares
+- **Configuração AWS** - Setup DynamoDB, S3 e Lambda (em breve)
+- **Testes e Qualidade** - Guia de testes automatizados (em breve)
+
+### Guias de Desenvolvimento
+- **Contribuição** - Como contribuir para o projeto (em breve)
+- **Deployment** - Guias de deploy e CI/CD (em breve)
 
 ---
 
