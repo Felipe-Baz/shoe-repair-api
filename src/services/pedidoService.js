@@ -18,8 +18,22 @@ exports.getPedido = async (id) => {
 
 exports.createPedido = async (pedido) => {
   // Estruturar o pedido com todos os campos necessários
+  // Gera um ID no formato: MMDDYYYYXXXX (XXXX = 4 caracteres alfanuméricos)
+  function gerarIdPedido() {
+    const now = new Date();
+    const mes = String(now.getMonth() + 1).padStart(2, '0');
+    const dia = String(now.getDate()).padStart(2, '0');
+    const ano = String(now.getFullYear());
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let aleatorio = '';
+    for (let i = 0; i < 4; i++) {
+      aleatorio += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `${mes}${dia}${ano}${aleatorio}`;
+  }
+
   const novoPedido = { 
-    id: uuidv4(),
+    id: gerarIdPedido(),
     clienteId: pedido.clienteId,
     clientName: pedido.clientName,
     modeloTenis: pedido.modeloTenis,
